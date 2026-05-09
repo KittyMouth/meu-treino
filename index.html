@@ -575,6 +575,79 @@ html, body {
 .dialogo-btn-cancel { background: var(--surface2); color: var(--text); }
 .dialogo-btn-confirm { background: var(--blue); color: #fff; }
 
+/* ===== TELA DE BLOQUEIO ===== */
+#lock-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 0;
+}
+.lock-icone { font-size: 52px; margin-bottom: 16px; }
+.lock-titulo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+.lock-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+  text-align: center;
+}
+.lock-input {
+  width: 100%;
+  max-width: 280px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-align: center;
+  padding: 14px 16px;
+  outline: none;
+  -webkit-text-security: disc;
+  margin-bottom: 16px;
+  transition: border-color .2s;
+}
+.lock-input:focus { border-color: var(--blue); }
+.lock-btn {
+  width: 100%;
+  max-width: 280px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.lock-btn:active { background: var(--blue-dim); }
+.lock-erro {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 600;
+  min-height: 20px;
+  text-align: center;
+}
+.lock-tentativas {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* ===== UTILITÁRIOS ===== */
 .empty-state {
   text-align: center;
@@ -640,6 +713,19 @@ html, body {
 </style>
 </head>
 <body>
+<!-- Tela de bloqueio por PIN -->
+<div id="lock-screen">
+  <div class="lock-icone">🔒</div>
+  <div class="lock-titulo">Meu Treino</div>
+  <div class="lock-sub">Digite seu PIN para acessar</div>
+  <input class="lock-input" id="lock-input" type="password" inputmode="numeric"
+    maxlength="10" placeholder="••••••" autocomplete="off"
+    aria-label="PIN de acesso" onkeydown="if(event.key==='Enter') verificarPin()">
+  <button class="lock-btn" onclick="verificarPin()">Entrar</button>
+  <div class="lock-erro" id="lock-erro"></div>
+  <div class="lock-tentativas" id="lock-tentativas"></div>
+</div>
+
 <div id="app">
   <!-- Cabeçalho -->
   <div id="header">
@@ -1466,6 +1552,75 @@ function renderHistorico() {
   el.innerHTML = html;
 }
 
+// ===== AUTENTICAÇÃO POR PIN =====
+const PIN_HASH = '6b11d0ef7754c5f2ba85351720517f77f184215fc3d9e1c5bc901223ce146b29';
+const AUTH_KEY = 'mt_auth';
+const AUTH_DIAS = 7; // dias que a sessão fica salva
+let tentativasPin = 0;
+const MAX_TENTATIVAS = 5;
+
+async function hashPin(pin) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function isAutenticado() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+    if (!salvo) return false;
+    const expiracao = salvo.ts + AUTH_DIAS * 24 * 60 * 60 * 1000;
+    return Date.now() < expiracao;
+  } catch { return false; }
+}
+
+function salvarAuth() {
+  localStorage.setItem(AUTH_KEY, JSON.stringify({ ts: Date.now() }));
+}
+
+function mostrarApp() {
+  document.getElementById('lock-screen').style.display = 'none';
+  init();
+}
+
+async function verificarPin() {
+  if (tentativasPin >= MAX_TENTATIVAS) return;
+
+  const input = document.getElementById('lock-input');
+  const erroEl = document.getElementById('lock-erro');
+  const tentEl = document.getElementById('lock-tentativas');
+  const pin = input.value.trim();
+
+  if (!pin) {
+    erroEl.textContent = 'Digite o PIN.';
+    return;
+  }
+
+  const hash = await hashPin(pin);
+
+  if (hash === PIN_HASH) {
+    salvarAuth();
+    mostrarApp();
+  } else {
+    tentativasPin++;
+    input.value = '';
+    input.focus();
+
+    const restantes = MAX_TENTATIVAS - tentativasPin;
+    erroEl.textContent = 'PIN incorreto.';
+
+    if (tentativasPin >= MAX_TENTATIVAS) {
+      erroEl.textContent = 'Muitas tentativas. Recarregue a página para tentar novamente.';
+      input.disabled = true;
+      document.querySelector('.lock-btn').disabled = true;
+      tentEl.textContent = '';
+    } else {
+      tentEl.textContent = `${restantes} tentativa${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`;
+    }
+  }
+}
+
 // ===== INICIALIZAÇÃO =====
 function init() {
   // Atualizar data no header
@@ -1501,7 +1656,15 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 
-window.addEventListener('DOMContentLoaded', init);
+// Verificar autenticação ao carregar
+window.addEventListener('DOMContentLoaded', () => {
+  if (isAutenticado()) {
+    mostrarApp();
+  } else {
+    // Mostrar tela de bloqueio e focar no input
+    document.getElementById('lock-input').focus();
+  }
+});
 </script>
 </body>
 </html>
