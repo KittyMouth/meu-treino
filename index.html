@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3b82f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Treino">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Meu Treino</title>
+<style>
+/* ===== RESET E BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface2: #242424;
+  --border: #2e2e2e;
+  --text: #f0f0f0;
+  --text-muted: #888;
+  --blue: #3b82f6;
+  --blue-dim: #1d4ed8;
+  --green: #22c55e;
+  --green-dim: #14532d;
+  --amber: #f59e0b;
+  --amber-dim: #451a03;
+  --red: #ef4444;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ===== LAYOUT PRINCIPAL ===== */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+#header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding-top: calc(12px + env(safe-area-inset-top));
+}
+#header h1 { font-size: 18px; font-weight: 700; color: var(--blue); }
+#header .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+/* ===== ABAS DE NAVEGAÇÃO ===== */
+#nav-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+#nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s;
+}
+.nav-tab.ativo {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+/* ===== CONTEÚDO PRINCIPAL ===== */
+#conteudo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 80px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== BARRA INFERIOR ===== */
+#bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+.bottom-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  transition: color .2s;
+}
+.bottom-btn.ativo { color: var(--blue); }
+.bottom-btn svg { width: 22px; height: 22px; }
+
+/* ===== TELA: HOME (SESSÕES) ===== */
+#tela-home { padding: 16px; }
+.sessao-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sessao-card:active { background: var(--surface2); }
+.sessao-info .dia { font-size: 11px; color: var(--blue); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.sessao-info h2 { font-size: 16px; font-weight: 700; margin: 2px 0; }
+.sessao-info .meta { font-size: 12px; color: var(--text-muted); }
+.sessao-info .ultima { font-size: 11px; color: var(--green); margin-top: 4px; }
+.sessao-arrow { color: var(--text-muted); font-size: 20px; }
+
+/* ===== TELA: TREINO ===== */
+#tela-treino { padding: 0; }
+.treino-header {
+  background: var(--surface);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.btn-voltar {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.treino-header-info h2 { font-size: 16px; font-weight: 700; }
+.treino-header-info .meta { font-size: 12px; color: var(--text-muted); }
+.badge-completo {
+  display: none;
+  margin: 12px 16px 0;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+}
+.badge-completo.visivel { display: block; }
+
+/* Blocos: aquecimento, principal, volta à calma */
+.bloco-titulo {
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.bloco-texto {
+  margin: 0 16px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ===== CARD DE EXERCÍCIO ===== */
+.ex-card {
+  margin: 8px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.ex-card.corretivo { border-left: 3px solid var(--amber); }
+.ex-card.prioritario { border-left: 3px solid var(--blue); }
+
+.ex-header {
+  padding: 12px 14px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ex-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  flex: 1;
+}
+.ex-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.badge-cor { background: #1e3a5f; color: var(--blue); }
+.badge-amb { background: var(--amber-dim); color: var(--amber); }
+.badge-grn { background: var(--green-dim); color: var(--green); }
+
+.ex-meta {
+  padding: 0 14px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ex-meta-item {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+.ex-detalhe {
+  padding: 0 14px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.ex-historico-inline {
+  margin: 0 14px 10px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.ex-historico-inline .aumento { color: var(--green); font-weight: 700; }
+.ex-historico-inline .reducao { color: var(--red); }
+
+/* ===== SÉRIES ===== */
+.series-container { padding: 4px 14px 14px; }
+.serie-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.serie-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 28px;
+}
+.serie-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 16px;
+  padding: 9px 10px;
+  text-align: center;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  outline: none;
+  transition: border-color .2s;
+}
+.serie-input:focus { border-color: var(--blue); }
+.serie-input::placeholder { color: var(--text-muted); font-size: 13px; }
+.serie-input.preenchido { border-color: var(--blue); background: #1a2744; }
+.serie-check {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s, border-color .2s;
+}
+.serie-check.feito {
+  background: var(--green);
+  border-color: var(--green);
+}
+.serie-check svg { width: 18px; height: 18px; }
+
+/* Linha de descanso */
+.serie-descanso {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 2px 0 6px 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-timer-serie {
+  font-size: 11px;
+  color: var(--blue);
+  background: none;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+/* Botão ver histórico */
+.btn-historico-ex {
+  display: block;
+  margin: 0 14px 12px;
+  width: calc(100% - 28px);
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 7px;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-historico-ex:hover { border-color: var(--blue); color: var(--blue); }
+
+/* Botão nova sessão */
+.btn-nova-sessao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 32px);
+  margin: 12px 16px 0;
+  padding: 13px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-nova-sessao:active { background: var(--blue-dim); }
+
+/* ===== TELA: PROGRESSO ===== */
+#tela-progresso { padding: 16px; }
+.progresso-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.progresso-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.progresso-sessao { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+.progresso-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.progresso-linha:last-child { border-bottom: none; }
+.progresso-nome { color: var(--text-muted); font-size: 12px; flex: 1; }
+.progresso-valor { font-weight: 700; font-size: 13px; }
+.progresso-delta { font-size: 11px; font-weight: 700; margin-left: 6px; min-width: 30px; text-align: right; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--red); }
+.delta-igual { color: var(--text-muted); }
+
+/* ===== TELA: HISTÓRICO ===== */
+#tela-historico { padding: 16px; }
+.hist-sessao-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.hist-sessao-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.hist-data { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+.hist-ex { margin-bottom: 8px; }
+.hist-ex-nome { font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 3px; }
+.hist-series { font-size: 12px; color: var(--text-muted); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.aberto { display: flex; }
+.modal-box {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  animation: slideUp .25s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.btn-fechar-modal {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+.hist-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.hist-item-data { color: var(--text-muted); font-size: 11px; margin-bottom: 4px; }
+.hist-item-series { display: flex; flex-wrap: wrap; gap: 6px; }
+.hist-serie-pill {
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+/* ===== CRONÔMETRO FLUTUANTE ===== */
+#timer-fab {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  right: 16px;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.timer-circle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--blue);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(59,130,246,.4);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+}
+.timer-display { font-size: 13px; line-height: 1; }
+.timer-ico { font-size: 18px; }
+.timer-panel {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  width: 200px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+.timer-panel.aberto { display: block; }
+.timer-presets { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.timer-preset {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.timer-preset:hover { background: var(--blue); border-color: var(--blue); }
+.timer-stop-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--red);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px;
+  cursor: pointer;
+}
+
+/* ===== DIÁLOGO PERSONALIZADO ===== */
+.dialogo-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.dialogo-overlay.aberto { display: flex; }
+.dialogo-box {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+}
+.dialogo-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.dialogo-box p { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+.dialogo-btns { display: flex; gap: 10px; justify-content: center; }
+.dialogo-btn {
+  flex: 1;
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.dialogo-btn-cancel { background: var(--surface2); color: var(--text); }
+.dialogo-btn-confirm { background: var(--blue); color: #fff; }
+
+/* ===== UTILITÁRIOS ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.empty-state .icone { font-size: 40px; margin-bottom: 12px; }
+.secao-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 16px 16px 8px;
+}
+
+/* ===== CHECKLIST AQUECIMENTO ===== */
+.aquecimento-lista {
+  margin: 0 16px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.aquecimento-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.aquecimento-item:last-child { border-bottom: none; }
+.aquecimento-item:active { background: var(--surface); }
+.aquecimento-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+.aquecimento-item.feito .aquecimento-check {
+  background: var(--green);
+  border-color: var(--green);
+}
+.aquecimento-item.feito .aquecimento-texto {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+}
+.aquecimento-texto {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+  transition: color .15s;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Cabeçalho -->
+  <div id="header">
+    <div>
+      <div id="header-titulo" class="subtitle">Meu Treino</div>
+      <h1 id="header-sub">Academia</h1>
+    </div>
+    <div id="header-data" style="font-size:12px;color:var(--text-muted)"></div>
+  </div>
+
+  <!-- Abas de sessões (visíveis apenas no treino) -->
+  <div id="nav-tabs" style="display:none"></div>
+
+  <!-- Conteúdo dinâmico -->
+  <div id="conteudo">
+    <div id="tela-home"></div>
+    <div id="tela-treino" style="display:none"></div>
+    <div id="tela-progresso" style="display:none"></div>
+    <div id="tela-historico" style="display:none"></div>
+  </div>
+
+  <!-- Barra inferior -->
+  <div id="bottom-nav">
+    <button class="bottom-btn ativo" onclick="mostrarTela('home')" aria-label="Treinos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Treinos
+    </button>
+    <button class="bottom-btn" onclick="mostrarTela('progresso')" aria-label="Progresso">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progresso
+    </button>
+    <button class="bottom-btn" onclick="mostrarTela('historico')" aria-label="Histórico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Histórico
+    </button>
+  </div>
+</div>
+
+<!-- Cronômetro flutuante -->
+<div id="timer-fab">
+  <div class="timer-panel" id="timer-panel">
+    <div class="timer-presets">
+      <button class="timer-preset" onclick="iniciarTimer(45)">45s</button>
+      <button class="timer-preset" onclick="iniciarTimer(60)">1min</button>
+      <button class="timer-preset" onclick="iniciarTimer(90)">1:30</button>
+      <button class="timer-preset" onclick="iniciarTimer(120)">2min</button>
+      <button class="timer-preset" onclick="iniciarTimer(150)">2:30</button>
+      <button class="timer-preset" onclick="iniciarTimer(180)">3min</button>
+    </div>
+    <button class="timer-stop-btn" onclick="pararTimer()">■ Parar</button>
+  </div>
+  <button class="timer-circle" onclick="toggleTimerPanel()" id="timer-btn" aria-label="Cronômetro de descanso">
+    <span class="timer-ico" id="timer-ico">⏱</span>
+    <span class="timer-display" id="timer-display" style="display:none"></span>
+  </button>
+</div>
+
+<!-- Modal histórico do exercício -->
+<div class="modal-overlay" id="modal-historico" role="dialog" aria-modal="true" aria-label="Histórico do exercício">
+  <div class="modal-box">
+    <div class="modal-titulo">
+      <span id="modal-hist-titulo">Histórico</span>
+      <button class="btn-fechar-modal" onclick="fecharModal('modal-historico')" aria-label="Fechar">×</button>
+    </div>
+    <div id="modal-hist-conteudo"></div>
+  </div>
+</div>
+
+<!-- Diálogo timer após série -->
+<div class="dialogo-overlay" id="dialogo-timer" role="dialog" aria-modal="true">
+  <div class="dialogo-box">
+    <h3>⏱ Iniciar descanso?</h3>
+    <p id="dialogo-timer-msg">Quanto tempo de descanso?</p>
+    <div class="dialogo-btns">
+      <button class="dialogo-btn dialogo-btn-cancel" onclick="fecharDialogo()">Não</button>
+      <button class="dialogo-btn dialogo-btn-confirm" id="dialogo-timer-confirm" onclick="confirmarTimer()">Sim</button>
+    </div>
+  </div>
+</div>
+
+<!-- Diálogo nova sessão -->
+<div class="dialogo-overlay" id="dialogo-nova-sessao" role="dialog" aria-modal="true">
+  <div class="dialogo-box">
+    <h3>Nova sessão</h3>
+    <p>Iniciar uma nova sessão de <strong id="dialogo-nova-nome"></strong>? O histórico anterior será mantido.</p>
+    <div class="dialogo-btns">
+      <button class="dialogo-btn dialogo-btn-cancel" onclick="fecharDialogo()">Cancelar</button>
+      <button class="dialogo-btn dialogo-btn-confirm" onclick="confirmarNovaSessao()">Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DADOS DO TREINO =====
+const TREINO = {
+  'push-a': {
+    id: 'push-a',
+    nome: 'Push A — Empurrar',
+    dia: 'Segunda',
+    grupos: 'Peito + Ombros + Tríceps',
+    duracao: '~80 min',
+    aquecimento: 'Rotação de ombro 10× cada direção · Retração escapular com elástico 2×15 · Rotação externa com elástico 2×12 cada · Mobilização torácica no rolo 90 seg · Flexão sem carga 2×10',
+    voltaCalma: 'Alongamento de peitoral na porta 30 seg × 2 cada · Mobilização torácica no rolo 90 seg · Respiração diafragmática 2 min',
+    exercicios: [
+      { id:'pa1', nome:'Supino Inclinado com Halteres', detalhe:'Banco 30–45° · Cotovelos a 75° do tronco · Excêntrica 3 seg · Concêntrica explosiva', series:4, reps:'8–10', cargaRef:'20–22 kg cada', rir:'RIR 2–3', descansoPorSerie:'2 min 30 seg', descansoPorSerieSegs:150, descansoProximo:'2 min', tipo:'prioritario' },
+      { id:'pa2', nome:'Supino Reto com Halteres', detalhe:'Banco plano · Escápulas retraídas · Cotovelos a 75°', series:3, reps:'10–12', cargaRef:'18–20 kg cada', rir:'RIR 2', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'2 min', tipo:'normal' },
+      { id:'pa3', nome:'Desenvolvimento com Halteres', detalhe:'Sentado, encosto 90° · Não travar cotovelos no topo · Excêntrica controlada', series:3, reps:'10–12', cargaRef:'12–14 kg cada', rir:'RIR 2–3', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'pa4', nome:'Crucifixo com Halteres', detalhe:'Banco plano · Leve flexão no cotovelo · Amplitude máxima sem dor', series:3, reps:'12–15', cargaRef:'10–12 kg cada', rir:'RIR 1–2', descansoPorSerie:'75 seg', descansoPorSerieSegs:75, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'pa5', nome:'Elevação Lateral com Halteres', detalhe:'Leve inclinação à frente · Polegar levemente para baixo · Sem balanço de tronco', series:4, reps:'12–15', cargaRef:'6–8 kg cada', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'pa6', nome:'Extensão de Tríceps no Puxador', detalhe:'Corda · Cotovelos fixos ao lado do tronco · Separar a corda no final', series:3, reps:'12–15', cargaRef:'15–18 kg', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'pa7', nome:'Face Pull com Corda', detalhe:'Puxador alto · Puxar em direção à testa · Cotovelos acima dos ombros · ⚠️ Exercício corretivo postural', series:3, reps:'15–20', cargaRef:'8–12 kg', rir:'RIR 2', descansoPorSerie:'45 seg', descansoPorSerieSegs:45, descansoProximo:'—', tipo:'corretivo' }
+    ]
+  },
+  'pull-a': {
+    id: 'pull-a',
+    nome: 'Pull A — Puxar',
+    dia: 'Terça',
+    grupos: 'Costas + Bíceps',
+    duracao: '~75 min',
+    aquecimento: 'Retração escapular com elástico 2×15 · Rotação de ombro no cabo 2×12 cada · Band pull-apart 2×15 · Mobilização torácica 90 seg · Puxada leve na máquina 2×10',
+    voltaCalma: 'Alongamento de dorsais pendurado 30 seg × 2 · Mobilização torácica no rolo 90 seg · Respiração diafragmática 2 min',
+    exercicios: [
+      { id:'pla1', nome:'Puxada Frontal Aberta', detalhe:'Pegada pronada · Cotovelos apontando para baixo e para fora · Deprimir escápula antes de puxar', series:4, reps:'8–10', cargaRef:'45–50 kg', rir:'RIR 2–3', descansoPorSerie:'2 min 30 seg', descansoPorSerieSegs:150, descansoProximo:'2 min', tipo:'prioritario' },
+      { id:'pla2', nome:'Remada Sentada no Cabo', detalhe:'Triângulo · Torso ereto · Puxar ao umbigo · Pausa de 1 seg na posição contraída', series:4, reps:'10–12', cargaRef:'40–45 kg', rir:'RIR 2', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'2 min', tipo:'normal' },
+      { id:'pla3', nome:'Puxada Supinada Fechada', detalhe:'Pegada supinada · Afastar cotovelos do tronco ao puxar · Foco em bíceps + dorsal', series:3, reps:'10–12', cargaRef:'38–42 kg', rir:'RIR 2', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'pla4', nome:'Rosca Direta com Halteres Alternada', detalhe:'Alternada · Supinar o punho no topo · Excêntrica 3 seg', series:3, reps:'10–12', cargaRef:'10–11 kg cada', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'pla5', nome:'Rosca Martelo com Halteres', detalhe:'Simultânea · Punho neutro · Desenvolve braquial e braquiorradial', series:3, reps:'12–15', cargaRef:'10–12 kg cada', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'pla6', nome:'Retração Escapular na Barra', detalhe:'Scapular Pull · Braços estendidos · Apenas retrair e deprimir escápulas · ⚠️ Exercício corretivo', series:3, reps:'12–15', cargaRef:'Peso corporal', rir:'RIR 2', descansoPorSerie:'45 seg', descansoPorSerieSegs:45, descansoProximo:'—', tipo:'corretivo' }
+    ]
+  },
+  'legs-a': {
+    id: 'legs-a',
+    nome: 'Legs A — Pernas',
+    dia: 'Quarta',
+    grupos: 'Quadríceps + Glúteos + Panturrilha',
+    duracao: '~80 min',
+    aquecimento: 'Rotação de quadril em pé 10× cada lado · Agachamento sem carga 2×10 · Extensora leve 2×12 · Abdutora leve 2×15 · Elevação de calcanhar 2×15',
+    voltaCalma: 'Alongamento de quadríceps em pé 40 seg cada · Alongamento de glúteos deitado (figura 4) 40 seg cada · Respiração diafragmática 2 min',
+    exercicios: [
+      { id:'la1', nome:'Agachamento no Smith', detalhe:'Guiado · Pés na linha dos ombros · Descer até coxa paralela · Joelhos na linha dos pés', series:4, reps:'10–12', cargaRef:'30–40 kg', rir:'RIR 2–3', descansoPorSerie:'2 min 30 seg', descansoPorSerieSegs:150, descansoProximo:'2 min', tipo:'prioritario' },
+      { id:'la2', nome:'Leg Press 45°', detalhe:'Pés na largura dos ombros · Não travar joelhos · Descer até 90° de flexão', series:4, reps:'10–12', cargaRef:'60–80 kg', rir:'RIR 2', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'la3', nome:'Extensão de Quadríceps', detalhe:'Cadeira extensora · Amplitude total · Pausa de 1 seg no topo · ⚠️ Exercício corretivo', series:3, reps:'12–15', cargaRef:'24–26 kg', rir:'RIR 1–2', descansoPorSerie:'90 seg', descansoPorSerieSegs:90, descansoProximo:'60 seg', tipo:'corretivo' },
+      { id:'la4', nome:'Abdução de Quadril na Máquina', detalhe:'⚠️ Exercício corretivo · Amplitude completa · Não usar impulso do tronco', series:3, reps:'15–20', cargaRef:'20–25 kg', rir:'RIR 2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'corretivo' },
+      { id:'la5', nome:'Elevação de Panturrilha Sentado', detalhe:'Amplitude completa · Pausa de 1 seg no topo · Excêntrica lenta 3 seg', series:4, reps:'12–15', cargaRef:'36–40 kg', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'la6', nome:'Prancha Frontal Isométrica', detalhe:'⚠️ Exercício corretivo · Neutro lombar · Não elevar quadril · Respirar normalmente', series:3, reps:'35–45 seg', cargaRef:'Peso corporal', rir:'Isométrico', descansoPorSerie:'45 seg', descansoPorSerieSegs:45, descansoProximo:'—', tipo:'corretivo' }
+    ]
+  },
+  'upper': {
+    id: 'upper',
+    nome: 'Upper — Tronco Completo',
+    dia: 'Sexta',
+    grupos: 'Peito + Costas + Ombros + Braços',
+    duracao: '~80 min',
+    aquecimento: 'Rotação de ombro 10× cada direção · Retração + depressão escapular 2×12 · Rotação torácica no rolo 2 min · Face pull leve com elástico 2×15 · Extensão de cotovelo com elástico 2×12',
+    voltaCalma: 'Alongamento de peitoral na porta 30 seg × 2 cada lado · Mobilização torácica no rolo 90 seg · Respiração diafragmática 2 min',
+    exercicios: [
+      { id:'up1', nome:'Crucifixo no Crossover', detalhe:'Polia alta · Amplitude máxima · Leve flexão nos cotovelos · Foco em peitoral', series:4, reps:'12–15', cargaRef:'12–15 kg cada lado', rir:'RIR 1–2', descansoPorSerie:'90 seg', descansoPorSerieSegs:90, descansoProximo:'90 seg', tipo:'prioritario' },
+      { id:'up2', nome:'Flexão com Pés Elevados', detalhe:'Pés no banco · Ativa cabeça clavicular do peitoral · Cotovelos a 45–75°', series:3, reps:'10–15', cargaRef:'Peso corporal', rir:'RIR 2', descansoPorSerie:'90 seg', descansoPorSerieSegs:90, descansoProximo:'2 min', tipo:'normal' },
+      { id:'up3', nome:'Puxada com Pegada Neutra Paralela', detalhe:'Cotovelos apontando para o chão · Escápulas deprimidas · Amplitude completa', series:4, reps:'10–12', cargaRef:'40–45 kg', rir:'RIR 2', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'2 min', tipo:'normal' },
+      { id:'up4', nome:'Pullover com Halter', detalhe:'Banco plano · Braços levemente flexionados · Ativa dorsal e peitoral', series:3, reps:'12', cargaRef:'14–16 kg', rir:'RIR 2', descansoPorSerie:'90 seg', descansoPorSerieSegs:90, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'up5', nome:'Elevação Lateral no Cabo Unilateral', detalhe:'Polia baixa · Unilateral · Leve inclinação oposta ao cabo', series:4, reps:'15 cada lado', cargaRef:'5–7 kg cada', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'up6', nome:'Rosca Scott com Halteres', detalhe:'Apoio no banco Scott · Amplitude completa · Não balançar no início', series:3, reps:'10–12', cargaRef:'10–12 kg cada', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'up7', nome:'Mergulho entre Bancos', detalhe:'Tríceps · Cotovelos apontando para trás · Descer até 90° · Não elevar ombros', series:3, reps:'10–12', cargaRef:'Peso corporal', rir:'RIR 2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'90 seg', tipo:'normal' },
+      { id:'up8', nome:'Face Pull com Corda', detalhe:'Puxador alto · ⚠️ Exercício corretivo postural · Cotovelos acima dos ombros', series:3, reps:'15–20', cargaRef:'8–12 kg', rir:'RIR 2', descansoPorSerie:'45 seg', descansoPorSerieSegs:45, descansoProximo:'—', tipo:'corretivo' }
+    ]
+  },
+  'lower': {
+    id: 'lower',
+    nome: 'Lower — Membros Inferiores',
+    dia: 'Sábado',
+    grupos: 'Isquiotibiais + Glúteos + Panturrilha + Core',
+    duracao: '~80 min',
+    aquecimento: 'Rotação de quadril deitado 10× cada lado · Ponte glútea sem carga 2×15 (pausa 3 seg no topo) · Búlgaro sem carga 8× cada lado · Flexão de quadril com joelho alto 10× cada lado · Mobilização de tornozelo na parede 10× cada lado',
+    voltaCalma: 'Alongamento de flexores do quadril em afundo 45 seg cada · Alongamento de isquiotibiais deitado com toalha 40 seg cada · Respiração diafragmática 2 min',
+    exercicios: [
+      { id:'lo1', nome:'Terra Romeno com Halteres', detalhe:'Quadril para trás · Joelhos levemente flexionados · Barra próxima às pernas · Sentir estiramento nos isquios', series:4, reps:'10–12', cargaRef:'20–22 kg cada', rir:'RIR 2–3', descansoPorSerie:'2 min 30 seg', descansoPorSerieSegs:150, descansoProximo:'2 min', tipo:'prioritario' },
+      { id:'lo2', nome:'Agachamento Búlgaro com Halteres', detalhe:'⚠️ Exercício corretivo · Pé traseiro elevado · Tronco levemente inclinado à frente · Joelho não ultrapassar o pé', series:3, reps:'10 cada lado', cargaRef:'10–14 kg cada', rir:'RIR 2', descansoPorSerie:'2 min', descansoPorSerieSegs:120, descansoProximo:'90 seg', tipo:'corretivo' },
+      { id:'lo3', nome:'Flexão de Isquiotibiais', detalhe:'Mesa flexora · Amplitude completa · Excêntrica lenta 3 seg · Não levantar quadril', series:3, reps:'12', cargaRef:'22–24 kg', rir:'RIR 2', descansoPorSerie:'90 seg', descansoPorSerieSegs:90, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'lo4', nome:'Ponte Glútea com Halteres', detalhe:'Ombros no banco · Halter no quadril · Pausa de 2 seg no topo · Contrair glúteos', series:4, reps:'15', cargaRef:'20–30 kg', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'lo5', nome:'Elevação de Panturrilha em Pé Unipodal', detalhe:'Um pé de cada vez · Amplitude completa · Pausa 1 seg no topo · Excêntrica 3 seg', series:4, reps:'15 cada lado', cargaRef:'Peso corp. + 10 kg', rir:'RIR 1–2', descansoPorSerie:'60 seg', descansoPorSerieSegs:60, descansoProximo:'60 seg', tipo:'normal' },
+      { id:'lo6', nome:'Prancha Lateral Isométrica', detalhe:'⚠️ Exercício corretivo · Quadril elevado · Coluna neutra · Fazer cada lado', series:3, reps:'25–35 seg cada', cargaRef:'Peso corporal', rir:'Isométrico', descansoPorSerie:'45 seg', descansoPorSerieSegs:45, descansoProximo:'45 seg', tipo:'corretivo' },
+      { id:'lo7', nome:'Bird-Dog (Quadrúpede)', detalhe:'⚠️ Exercício corretivo · Braço e perna opostos · Coluna neutra · Mover lento e controlado', series:3, reps:'10 cada lado', cargaRef:'Peso corporal', rir:'RIR 2', descansoPorSerie:'45 seg', descansoPorSerieSegs:45, descansoProximo:'—', tipo:'corretivo' }
+    ]
+  }
+};
+
+// ===== ESTADO GLOBAL =====
+let telaAtual = 'home';
+let sessaoTreinoAtual = null; // { sessaoId, tipoId }
+let timerInterval = null;
+let timerRestante = 0;
+let timerPanelAberto = false;
+let dialogoTimerSegs = 0;
+let novaSessaoTipoId = null;
+
+// ===== PERSISTÊNCIA LOCAL (localStorage) =====
+
+// Gera ID único para sessão
+function gerarSessaoId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// Salva dados de uma série
+function salvarSerie(exId, sessaoId, nSerie, dados) {
+  const chave = `ex_${exId}_${sessaoId}`;
+  const atual = JSON.parse(localStorage.getItem(chave) || '{}');
+  atual[nSerie] = { ...dados, ts: new Date().toISOString() };
+  localStorage.setItem(chave, JSON.stringify(atual));
+}
+
+// Lê dados de um exercício em uma sessão
+function lerExercicio(exId, sessaoId) {
+  const chave = `ex_${exId}_${sessaoId}`;
+  return JSON.parse(localStorage.getItem(chave) || '{}');
+}
+
+// Salva metadados da sessão
+function salvarSessao(sessaoId, dados) {
+  const chave = `sessao_${sessaoId}`;
+  const atual = JSON.parse(localStorage.getItem(chave) || '{}');
+  localStorage.setItem(chave, JSON.stringify({ ...atual, ...dados }));
+}
+
+// Lê metadados da sessão
+function lerSessao(sessaoId) {
+  return JSON.parse(localStorage.getItem(`sessao_${sessaoId}`) || '{}');
+}
+
+// Lista todas as sessões de um tipo de treino, ordenadas por data (mais recente primeiro)
+function listarSessoes(tipoId) {
+  const sessoes = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key.startsWith('sessao_')) continue;
+    const dados = JSON.parse(localStorage.getItem(key) || '{}');
+    if (dados.tipoId === tipoId) sessoes.push(dados);
+  }
+  return sessoes.sort((a, b) => b.dataInicio - a.dataInicio);
+}
+
+// Retorna sessão ativa atual de um tipo (a mais recente não finalizada, ou a mais recente)
+function sessaoAtiva(tipoId) {
+  const todas = listarSessoes(tipoId);
+  return todas[0] || null;
+}
+
+// Histórico de cargas de um exercício (últimas 8 sessões)
+function historicoCargasEx(exId, tipoId) {
+  const sessoes = listarSessoes(tipoId);
+  const resultado = [];
+  for (const s of sessoes.slice(0, 8)) {
+    const dados = lerExercicio(exId, s.id);
+    if (Object.keys(dados).length > 0) {
+      resultado.push({ sessao: s, series: dados });
+    }
+  }
+  return resultado;
+}
+
+// Limpar dados muito antigos (>180 dias) se storage > 4MB
+function limparDadosAntigos() {
+  try {
+    const usado = JSON.stringify(localStorage).length;
+    if (usado < 4_000_000) return;
+    const limite = Date.now() - 180 * 24 * 60 * 60 * 1000;
+    const keysParaRemover = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('sessao_')) {
+        const dados = JSON.parse(localStorage.getItem(key) || '{}');
+        if (dados.dataInicio && dados.dataInicio < limite) keysParaRemover.push(key);
+      }
+    }
+    // Remover sessões e seus registros
+    for (const key of keysParaRemover) {
+      const sessaoId = key.replace('sessao_', '');
+      // Remover registros da sessão
+      const exKeys = [];
+      for (let j = 0; j < localStorage.length; j++) {
+        const k = localStorage.key(j);
+        if (k && k.includes(`_${sessaoId}`)) exKeys.push(k);
+      }
+      exKeys.forEach(k => localStorage.removeItem(k));
+      localStorage.removeItem(key);
+    }
+  } catch(e) { /* silencioso */ }
+}
+
+// ===== FORMATAÇÃO =====
+function formatarData(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+}
+function formatarDataHora(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }) + ' ' +
+    d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+function formatarTimer(segs) {
+  const m = Math.floor(segs / 60);
+  const s = segs % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`;
+}
+
+// ===== CRONÔMETRO =====
+function toggleTimerPanel() {
+  if (timerInterval) {
+    timerPanelAberto = !timerPanelAberto;
+  } else {
+    timerPanelAberto = !timerPanelAberto;
+  }
+  document.getElementById('timer-panel').classList.toggle('aberto', timerPanelAberto);
+}
+
+function iniciarTimer(segs) {
+  pararTimer();
+  timerRestante = segs;
+  timerPanelAberto = false;
+  document.getElementById('timer-panel').classList.remove('aberto');
+  const btn = document.getElementById('timer-btn');
+  const ico = document.getElementById('timer-ico');
+  const disp = document.getElementById('timer-display');
+  ico.style.display = 'none';
+  disp.style.display = 'block';
+  btn.style.background = 'var(--amber)';
+
+  function tick() {
+    if (timerRestante <= 0) {
+      pararTimer();
+      // Vibrar ao terminar
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+      btn.style.background = 'var(--green)';
+      disp.textContent = '✓';
+      setTimeout(() => {
+        btn.style.background = 'var(--blue)';
+        ico.style.display = '';
+        disp.style.display = 'none';
+      }, 2500);
+      return;
+    }
+    disp.textContent = formatarTimer(timerRestante);
+    timerRestante--;
+    timerInterval = setTimeout(tick, 1000);
+  }
+  tick();
+}
+
+function pararTimer() {
+  if (timerInterval) { clearTimeout(timerInterval); timerInterval = null; }
+  timerRestante = 0;
+  const ico = document.getElementById('timer-ico');
+  const disp = document.getElementById('timer-display');
+  const btn = document.getElementById('timer-btn');
+  if (ico) ico.style.display = '';
+  if (disp) { disp.style.display = 'none'; }
+  if (btn) btn.style.background = 'var(--blue)';
+}
+
+// ===== MODAIS E DIÁLOGOS =====
+function abrirModal(id) {
+  document.getElementById(id).classList.add('aberto');
+  document.body.style.overflow = 'hidden';
+}
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('aberto');
+  document.body.style.overflow = '';
+}
+function fecharDialogo() {
+  document.querySelectorAll('.dialogo-overlay').forEach(el => el.classList.remove('aberto'));
+}
+
+// Diálogo de timer pós-série
+function mostrarDialogoTimer(segs, nomeDescanso) {
+  dialogoTimerSegs = segs;
+  document.getElementById('dialogo-timer-msg').textContent = `Descanso sugerido: ${nomeDescanso}`;
+  document.getElementById('dialogo-timer').classList.add('aberto');
+}
+function confirmarTimer() {
+  fecharDialogo();
+  if (dialogoTimerSegs > 0) iniciarTimer(dialogoTimerSegs);
+}
+
+// Diálogo nova sessão
+function pedirNovaSessao(tipoId) {
+  novaSessaoTipoId = tipoId;
+  document.getElementById('dialogo-nova-nome').textContent = TREINO[tipoId].nome;
+  document.getElementById('dialogo-nova-sessao').classList.add('aberto');
+}
+function confirmarNovaSessao() {
+  fecharDialogo();
+  if (novaSessaoTipoId) criarNovaSessao(novaSessaoTipoId);
+}
+
+// ===== NAVEGAÇÃO ENTRE TELAS =====
+function mostrarTela(nome) {
+  telaAtual = nome;
+  document.querySelectorAll('[id^="tela-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.bottom-btn').forEach(el => el.classList.remove('ativo'));
+  document.getElementById('nav-tabs').style.display = 'none';
+
+  if (nome === 'home') {
+    document.getElementById('tela-home').style.display = '';
+    document.querySelectorAll('.bottom-btn')[0].classList.add('ativo');
+    renderHome();
+  } else if (nome === 'treino' && sessaoTreinoAtual) {
+    document.getElementById('tela-treino').style.display = '';
+    document.querySelectorAll('.bottom-btn')[0].classList.add('ativo');
+    renderTreino(sessaoTreinoAtual.tipoId, sessaoTreinoAtual.sessaoId);
+  } else if (nome === 'progresso') {
+    document.getElementById('tela-progresso').style.display = '';
+    document.querySelectorAll('.bottom-btn')[1].classList.add('ativo');
+    renderProgresso();
+  } else if (nome === 'historico') {
+    document.getElementById('tela-historico').style.display = '';
+    document.querySelectorAll('.bottom-btn')[2].classList.add('ativo');
+    renderHistorico();
+  }
+}
+
+// ===== TELA HOME =====
+function renderHome() {
+  const el = document.getElementById('tela-home');
+  const dias = ['push-a', 'pull-a', 'legs-a', 'upper', 'lower'];
+  let html = '<div class="secao-titulo">Suas Sessões</div>';
+
+  for (const tipoId of dias) {
+    const t = TREINO[tipoId];
+    const ultima = sessaoAtiva(tipoId);
+    const ultimaStr = ultima ? `Última vez: ${formatarData(ultima.dataInicio)}` : 'Nenhuma sessão registrada';
+    html += `
+      <div class="sessao-card" onclick="abrirSessao('${tipoId}')" role="button" aria-label="Abrir ${t.nome}">
+        <div class="sessao-info">
+          <div class="dia">${t.dia}</div>
+          <h2>${t.nome}</h2>
+          <div class="meta">${t.grupos} · ${t.duracao}</div>
+          <div class="ultima">${ultimaStr}</div>
+        </div>
+        <div class="sessao-arrow">›</div>
+      </div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ===== ABRIR SESSÃO =====
+function abrirSessao(tipoId) {
+  const ultima = sessaoAtiva(tipoId);
+  if (ultima) {
+    // Verifica se a sessão atual é do mesmo dia (mesma data)
+    const hoje = new Date().toDateString();
+    const diaUltima = ultima.dataInicio ? new Date(ultima.dataInicio).toDateString() : null;
+    if (diaUltima === hoje) {
+      // Continuar sessão do dia
+      sessaoTreinoAtual = { tipoId, sessaoId: ultima.id };
+    } else {
+      // Diferente dia: criar nova automaticamente
+      criarNovaSessao(tipoId);
+      return;
+    }
+  } else {
+    criarNovaSessao(tipoId);
+    return;
+  }
+  mostrarTela('treino');
+}
+
+function criarNovaSessao(tipoId) {
+  const sessaoId = gerarSessaoId();
+  salvarSessao(sessaoId, { id: sessaoId, tipoId, dataInicio: Date.now() });
+  sessaoTreinoAtual = { tipoId, sessaoId };
+  mostrarTela('treino');
+}
+
+function toggleAquecimento(sessaoId, index, el) {
+  const chave = `aquecimento_${sessaoId}`;
+  const atual = JSON.parse(localStorage.getItem(chave) || '{}');
+  const novoEstado = !atual[index];
+  atual[index] = novoEstado;
+  localStorage.setItem(chave, JSON.stringify(atual));
+
+  el.classList.toggle('feito', novoEstado);
+  const checkEl = el.querySelector('.aquecimento-check');
+  checkEl.innerHTML = novoEstado
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '';
+}
+
+// ===== TELA TREINO =====
+function renderTreino(tipoId, sessaoId) {
+  const t = TREINO[tipoId];
+  const el = document.getElementById('tela-treino');
+
+  // Verificar progresso total
+  let totalSeries = 0;
+  let seriesFeitas = 0;
+  for (const ex of t.exercicios) {
+    const dados = lerExercicio(ex.id, sessaoId);
+    totalSeries += ex.series;
+    for (let s = 1; s <= ex.series; s++) {
+      if (dados[s] && dados[s].done) seriesFeitas++;
+    }
+  }
+  const treinoConcluido = totalSeries > 0 && seriesFeitas === totalSeries;
+
+  let html = `
+    <div class="treino-header">
+      <button class="btn-voltar" onclick="mostrarTela('home')" aria-label="Voltar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="treino-header-info">
+        <h2>${t.nome}</h2>
+        <div class="meta">${t.dia} · ${t.grupos}</div>
+      </div>
+    </div>
+    <div class="badge-completo ${treinoConcluido ? 'visivel' : ''}">🎉 Treino concluído! Parabéns!</div>`;
+
+  // Botão nova sessão
+  html += `<div style="padding:8px 16px 0">
+    <button class="btn-nova-sessao" onclick="pedirNovaSessao('${tipoId}')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nova sessão
+    </button>
+  </div>`;
+
+  // Aquecimento — checklist
+  const aquecimentoItens = t.aquecimento.split(' · ');
+  const aquecimentoSalvo = JSON.parse(localStorage.getItem(`aquecimento_${sessaoId}`) || '{}');
+  let aquecimentoHtml = '<div class="aquecimento-lista">';
+  aquecimentoItens.forEach((item, i) => {
+    const feito = !!aquecimentoSalvo[i];
+    aquecimentoHtml += `
+      <div class="aquecimento-item ${feito ? 'feito' : ''}" onclick="toggleAquecimento('${sessaoId}',${i},this)">
+        <div class="aquecimento-check">
+          ${feito ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </div>
+        <span class="aquecimento-texto">${item.trim()}</span>
+      </div>`;
+  });
+  aquecimentoHtml += '</div>';
+  html += `<div class="bloco-titulo">🔥 Aquecimento (10 min)</div>${aquecimentoHtml}`;
+
+  // Exercícios
+  html += `<div class="bloco-titulo">💪 Exercícios</div>`;
+  for (const ex of t.exercicios) {
+    html += renderExercicio(ex, sessaoId, tipoId);
+  }
+
+  // Volta à calma
+  html += `<div class="bloco-titulo">🧘 Volta à Calma (5 min)</div>
+    <div class="bloco-texto">${t.voltaCalma}</div>`;
+
+  html += `<div style="height:24px"></div>`;
+  el.innerHTML = html;
+
+  // Reattach dos inputs (event delegation)
+  el.querySelectorAll('.serie-input').forEach(input => {
+    input.addEventListener('input', onSerieInput);
+  });
+}
+
+function renderExercicio(ex, sessaoId, tipoId) {
+  const dados = lerExercicio(ex.id, sessaoId);
+  const hist = historicoCargasEx(ex.id, tipoId);
+  // Mostrar dados da sessão mais recente anterior (excluindo a atual)
+  const sessaoAnterior = hist.find(h => h.sessao.id !== sessaoId);
+
+  let histHtml = '';
+  if (sessaoAnterior) {
+    const s1 = sessaoAnterior.series[1];
+    const s1Atual = dados[1];
+    let delta = '';
+    if (s1 && s1Atual && s1Atual.kg && s1.kg) {
+      const diff = parseFloat(s1Atual.kg) - parseFloat(s1.kg);
+      if (diff > 0) delta = `<span class="aumento">↑ +${diff.toFixed(1)}kg</span>`;
+      else if (diff < 0) delta = `<span class="reducao">↓ ${diff.toFixed(1)}kg</span>`;
+    }
+    const cargaStr = s1 ? `${s1.kg ? s1.kg+'kg' : '?'} × ${s1.reps ? s1.reps+'rep' : '?'} (S1)` : '—';
+    histHtml = `<div class="ex-historico-inline">
+      Última vez (${formatarData(sessaoAnterior.sessao.dataInicio)}): ${cargaStr} ${delta}
+    </div>`;
+  }
+
+  // Séries
+  let seriesHtml = '';
+  for (let s = 1; s <= ex.series; s++) {
+    const dadosSerie = dados[s] || {};
+    const feito = dadosSerie.done || false;
+    const isUltima = s === ex.series;
+
+    seriesHtml += `
+      <div class="serie-row">
+        <span class="serie-label">S${s}</span>
+        <input type="number" inputmode="decimal" class="serie-input ${dadosSerie.kg ? 'preenchido' : ''}"
+          placeholder="kg" step="0.5" min="0" value="${dadosSerie.kg || ''}"
+          aria-label="Carga série ${s} de ${ex.nome}"
+          data-exid="${ex.id}" data-sessaoid="${sessaoId}" data-serie="${s}" data-campo="kg">
+        <input type="number" inputmode="numeric" class="serie-input ${dadosSerie.reps ? 'preenchido' : ''}"
+          placeholder="reps" min="0" value="${dadosSerie.reps || ''}"
+          aria-label="Repetições série ${s} de ${ex.nome}"
+          data-exid="${ex.id}" data-sessaoid="${sessaoId}" data-serie="${s}" data-campo="reps">
+        <button class="serie-check ${feito ? 'feito' : ''}"
+          onclick="toggleCheck('${ex.id}','${sessaoId}',${s},${ex.descansoPorSerieSegs},'${ex.descansoPorSerie}')"
+          aria-label="Marcar série ${s} como concluída" aria-pressed="${feito}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="${feito ? '#fff' : 'var(--text-muted)'}" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+      ${!isUltima ? `<div class="serie-descanso">⏱ Descanso: ${ex.descansoPorSerie}
+        <button class="btn-timer-serie" onclick="iniciarTimer(${ex.descansoPorSerieSegs})">Iniciar</button>
+      </div>` : ''}`;
+  }
+
+  const tipoBadge = ex.tipo === 'corretivo'
+    ? '<span class="badge badge-amb">⚠ Corretivo</span>'
+    : ex.tipo === 'prioritario'
+    ? '<span class="badge badge-cor">★ Prioritário</span>'
+    : '';
+
+  return `
+    <div class="ex-card ${ex.tipo}" id="excard-${ex.id}">
+      <div class="ex-header">
+        <div>
+          <div class="ex-titulo">${ex.nome}</div>
+          <div class="ex-badges">${tipoBadge}</div>
+        </div>
+      </div>
+      <div class="ex-detalhe">${ex.detalhe}</div>
+      <div class="ex-meta">
+        <span class="ex-meta-item">📊 ${ex.series}×${ex.reps}</span>
+        <span class="ex-meta-item">🏋️ ${ex.cargaRef}</span>
+        <span class="ex-meta-item">${ex.rir}</span>
+        <span class="ex-meta-item">⏱ Entre séries: ${ex.descansoPorSerie}</span>
+        ${ex.descansoProximo !== '—' ? `<span class="ex-meta-item">➡ Até próximo: ${ex.descansoProximo}</span>` : ''}
+      </div>
+      ${histHtml}
+      <div class="series-container">${seriesHtml}</div>
+      <button class="btn-historico-ex" onclick="abrirHistoricoEx('${ex.id}','${tipoId}','${ex.nome}')" aria-label="Ver histórico de ${ex.nome}">
+        📈 Ver histórico das últimas sessões
+      </button>
+    </div>`;
+}
+
+// ===== INPUT DE SÉRIE (AUTOSAVE) =====
+function onSerieInput(e) {
+  const input = e.target;
+  const { exid, sessaoid, serie, campo } = input.dataset;
+  const valor = input.value.trim();
+
+  const atual = JSON.parse(localStorage.getItem(`ex_${exid}_${sessaoid}`) || '{}');
+  if (!atual[serie]) atual[serie] = {};
+  atual[serie][campo] = valor;
+  atual[serie].ts = new Date().toISOString();
+  localStorage.setItem(`ex_${exid}_${sessaoid}`, JSON.stringify(atual));
+
+  input.classList.toggle('preenchido', !!valor);
+}
+
+// ===== TOGGLE CHECK DE SÉRIE =====
+function toggleCheck(exId, sessaoId, nSerie, descansoSegs, descansoLabel) {
+  const chave = `ex_${exId}_${sessaoId}`;
+  const atual = JSON.parse(localStorage.getItem(chave) || '{}');
+  if (!atual[nSerie]) atual[nSerie] = {};
+  const novoEstado = !atual[nSerie].done;
+  atual[nSerie].done = novoEstado;
+  atual[nSerie].ts = new Date().toISOString();
+  localStorage.setItem(chave, JSON.stringify(atual));
+
+  // Atualizar botão visualmente
+  const btn = document.querySelector(`[onclick*="toggleCheck('${exId}','${sessaoId}',${nSerie}"]`);
+  if (btn) {
+    btn.classList.toggle('feito', novoEstado);
+    btn.setAttribute('aria-pressed', novoEstado);
+    btn.querySelector('svg').setAttribute('stroke', novoEstado ? '#fff' : 'var(--text-muted)');
+  }
+
+  // Verificar se treino foi concluído
+  verificarConclusao(sessaoTreinoAtual.tipoId, sessaoId);
+
+  // Perguntar sobre timer se marcou como feito
+  if (novoEstado && descansoSegs > 0) {
+    mostrarDialogoTimer(descansoSegs, descansoLabel);
+  }
+}
+
+function verificarConclusao(tipoId, sessaoId) {
+  const t = TREINO[tipoId];
+  let total = 0, feitas = 0;
+  for (const ex of t.exercicios) {
+    const dados = lerExercicio(ex.id, sessaoId);
+    total += ex.series;
+    for (let s = 1; s <= ex.series; s++) {
+      if (dados[s] && dados[s].done) feitas++;
+    }
+  }
+  const badge = document.querySelector('.badge-completo');
+  if (badge) badge.classList.toggle('visivel', total > 0 && feitas === total);
+}
+
+// ===== HISTÓRICO DO EXERCÍCIO =====
+function abrirHistoricoEx(exId, tipoId, nomeEx) {
+  const hist = historicoCargasEx(exId, tipoId);
+  document.getElementById('modal-hist-titulo').textContent = nomeEx;
+
+  let html = '';
+  if (hist.length === 0) {
+    html = '<div class="empty-state"><div class="icone">📊</div>Nenhum histórico ainda. Complete algumas sessões!</div>';
+  } else {
+    for (const h of hist) {
+      const seriesList = Object.entries(h.series).map(([n, v]) =>
+        `<span class="hist-serie-pill">S${n}: ${v.kg ? v.kg+'kg' : '?'} × ${v.reps ? v.reps+'rep' : '?'}${v.done ? ' ✓' : ''}</span>`
+      ).join('');
+      html += `<div class="hist-item">
+        <div class="hist-item-data">${formatarDataHora(h.sessao.dataInicio)}</div>
+        <div class="hist-item-series">${seriesList || '<span style="color:var(--text-muted)">Sem dados</span>'}</div>
+      </div>`;
+    }
+  }
+  document.getElementById('modal-hist-conteudo').innerHTML = html;
+  abrirModal('modal-historico');
+}
+
+// ===== TELA PROGRESSO =====
+function renderProgresso() {
+  const el = document.getElementById('tela-progresso');
+  let html = '<div class="secao-titulo">Evolução por Exercício</div>';
+
+  for (const tipoId of Object.keys(TREINO)) {
+    const t = TREINO[tipoId];
+    const sessoes = listarSessoes(tipoId).slice(0, 6);
+    if (sessoes.length === 0) continue;
+
+    html += `<div class="progresso-card">
+      <div class="progresso-sessao">${t.dia} — ${t.nome}</div>`;
+
+    for (const ex of t.exercicios) {
+      const hist = historicoCargasEx(ex.id, tipoId);
+      if (hist.length === 0) continue;
+
+      const mais_recente = hist[0];
+      const anterior = hist[1];
+
+      const s1r = mais_recente.series[1];
+      const s1a = anterior ? anterior.series[1] : null;
+
+      let deltaHtml = '<span class="progresso-delta delta-igual">—</span>';
+      let cargaAtual = '—';
+
+      if (s1r && s1r.kg) {
+        cargaAtual = `${s1r.kg}kg × ${s1r.reps || '?'}rep`;
+        if (s1a && s1a.kg) {
+          const diff = parseFloat(s1r.kg) - parseFloat(s1a.kg);
+          if (diff > 0) deltaHtml = `<span class="progresso-delta delta-up">↑ +${diff.toFixed(1)}</span>`;
+          else if (diff < 0) deltaHtml = `<span class="progresso-delta delta-down">↓ ${diff.toFixed(1)}</span>`;
+          else deltaHtml = `<span class="progresso-delta delta-igual">=</span>`;
+        }
+      }
+
+      html += `<div class="progresso-linha">
+        <span class="progresso-nome">${ex.nome}</span>
+        <span class="progresso-valor">${cargaAtual}</span>
+        ${deltaHtml}
+      </div>`;
+    }
+
+    html += '</div>';
+  }
+
+  if (html === '<div class="secao-titulo">Evolução por Exercício</div>') {
+    html += '<div class="empty-state"><div class="icone">📈</div>Complete alguns treinos para ver o progresso aqui!</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ===== TELA HISTÓRICO =====
+function renderHistorico() {
+  const el = document.getElementById('tela-historico');
+  let html = '<div class="secao-titulo">Histórico de Sessões</div>';
+  const todasSessoes = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key.startsWith('sessao_')) continue;
+    const dados = JSON.parse(localStorage.getItem(key) || '{}');
+    if (dados.tipoId) todasSessoes.push(dados);
+  }
+
+  todasSessoes.sort((a, b) => b.dataInicio - a.dataInicio);
+
+  if (todasSessoes.length === 0) {
+    html += '<div class="empty-state"><div class="icone">🕐</div>Nenhuma sessão registrada ainda. Vamos treinar!</div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  for (const s of todasSessoes.slice(0, 30)) {
+    const t = TREINO[s.tipoId];
+    if (!t) continue;
+
+    let exerciciosHtml = '';
+    for (const ex of t.exercicios) {
+      const dados = lerExercicio(ex.id, s.id);
+      const keys = Object.keys(dados);
+      if (keys.length === 0) continue;
+      const seriesStr = keys.sort((a,b) => Number(a)-Number(b)).map(n => {
+        const v = dados[n];
+        return `S${n}:${v.kg ? v.kg+'kg' : '?'}×${v.reps ? v.reps : '?'}${v.done ? '✓' : ''}`;
+      }).join(' · ');
+      exerciciosHtml += `<div class="hist-ex">
+        <div class="hist-ex-nome">${ex.nome}</div>
+        <div class="hist-series">${seriesStr}</div>
+      </div>`;
+    }
+
+    if (!exerciciosHtml) continue;
+
+    html += `<div class="hist-sessao-card">
+      <h3>${t.nome}</h3>
+      <div class="hist-data">📅 ${formatarDataHora(s.dataInicio)}</div>
+      ${exerciciosHtml}
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ===== INICIALIZAÇÃO =====
+function init() {
+  // Atualizar data no header
+  const agora = new Date();
+  document.getElementById('header-data').textContent =
+    agora.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short' });
+
+  // Registrar service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js').catch(e => console.warn('SW:', e));
+  }
+
+  // Limpar dados antigos se necessário
+  limparDadosAntigos();
+
+  // Renderizar home
+  mostrarTela('home');
+}
+
+// Fechar painel do timer ao clicar fora
+document.addEventListener('click', (e) => {
+  const fab = document.getElementById('timer-fab');
+  if (timerPanelAberto && !fab.contains(e.target)) {
+    timerPanelAberto = false;
+    document.getElementById('timer-panel').classList.remove('aberto');
+  }
+});
+
+// Fechar modais ao clicar no overlay
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) fecharModal(overlay.id);
+  });
+});
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
