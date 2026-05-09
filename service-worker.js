@@ -1,7 +1,7 @@
 // Service Worker — Meu Treino PWA
 // Estratégia: Cache First para assets estáticos
 
-const CACHE_VERSION = 'meu-treino-v1';
+const CACHE_VERSION = 'meu-treino-v2';
 const ASSETS = [
   './',
   './index.html',
